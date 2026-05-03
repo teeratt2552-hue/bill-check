@@ -629,10 +629,6 @@ function render(){
       html += `<tr class="grand"><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td><td></td></tr>`;
     }
   }
-  const summaryParts = [];
-  if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
-  if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
-  html += `<tr class="grand"><td colspan="2"></td><td colspan="3" style="text-align:right;font-size:15px">${summaryParts.join("  •  ")}</td><td></td></tr>`;
   html += `<tr class="grand"><td class="label" colspan="2">รวมเงินทั้งหมด</td><td colspan="3" style="text-align:right;font-size:15px"></td><td>${formatMoney(totalPrice)} บาท</td></tr>`;
 
   html += `</tbody></table></div>`;

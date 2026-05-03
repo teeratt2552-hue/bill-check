@@ -47,8 +47,8 @@
     text-align:center;
   }
   .brand{
-    font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.4px;
-    margin-bottom:8px;
+    font-size:17px;font-weight:700;color:var(--text);letter-spacing:.3px;
+    margin:0 0 -4px 4px;
   }
 
   .card{
@@ -214,8 +214,9 @@
     <h1>ใบวางบิล</h1>
   </header>
 
+  <div class="brand">ร้านเฮียต้อม ยางพารา</div>
+
   <div class="card no-print">
-    <div class="brand">เฮียต้อม ยางพารา</div>
     <h2>เพิ่มข้อมูล</h2>
     <form id="form" class="row">
       <div class="field">
@@ -241,13 +242,16 @@
           <option value="สิบล้อ">สิบล้อ</option>
         </select>
       </div>
+      <div class="field">
+        <label for="price">จำนวนเงิน (บาท)</label>
+        <input type="number" id="price" value="0" min="0" step="0.01" style="width:130px">
+      </div>
       <div class="field"><button type="submit">+ เพิ่มข้อมูล</button></div>
       <div class="field"><button type="button" class="ghost" id="clearForm">ล้างฟอร์ม</button></div>
     </form>
   </div>
 
   <div class="card no-print">
-    <h2>ตัวกรอง & ส่งออก</h2>
     <div class="filter-bar">
       <div class="field">
         <label for="range">ช่วงเวลา</label>
@@ -338,6 +342,7 @@ const dateEl = $("#date");
 const plateEl = $("#plate");
 const qtyEl = $("#qty");
 const typeEl = $("#type");
+const priceEl = $("#price");
 const rangeEl = $("#range");
 const anchorEl = $("#anchor");
 const anchorWrap = $("#anchorWrap");
@@ -408,7 +413,8 @@ form.addEventListener("submit", e => {
     date: dateEl.value,
     plate,
     qty: parseInt(qtyEl.value,10) || 1,
-    type: typeEl.value
+    type: typeEl.value,
+    price: parseFloat(priceEl.value) || 0
   };
   if(!rec.date || !rec.plate) return;
   records.push(rec);
@@ -421,12 +427,13 @@ form.addEventListener("submit", e => {
   }
   plateEl.value = "";
   qtyEl.value = 1;
+  priceEl.value = 0;
   plateEl.focus();
   render();
 });
 
 $("#clearForm").addEventListener("click",()=>{
-  plateEl.value=""; qtyEl.value=1; typeEl.value="พ่วง";
+  plateEl.value=""; qtyEl.value=1; typeEl.value="พ่วง"; priceEl.value=0;
 });
 
 rangeEl.addEventListener("change",()=>{
@@ -583,45 +590,50 @@ function render(){
   }
   const groups = groupByDate(filtered);
   let html = tag + `<div class="table-wrap"><table id="dataTable">
-    <thead><tr><th>วันที่</th><th>ทะเบียนรถ</th><th>จำนวน</th><th>ชนิดรถ</th><th>จัดการ</th></tr></thead><tbody>`;
+    <thead><tr><th>วันที่</th><th>ทะเบียนรถ</th><th>จำนวน</th><th>ชนิดรถ</th><th>จำนวนเงิน</th><th>จัดการ</th></tr></thead><tbody>`;
 
-  let totalPwang = 0, totalSibLor = 0;
+  let totalPwang = 0, totalSibLor = 0, totalPrice = 0;
 
   for(const [date, rows] of groups){
     rows.forEach((r,i)=>{
+      const p = +r.price || 0;
       html += `<tr>
         <td>${i===0 ? formatThaiDate(date) : ""}</td>
         <td>${escapeHtml(r.plate)}</td>
         <td>${r.qty}</td>
         <td>${escapeHtml(r.type)}</td>
+        <td>${p ? formatMoney(p) : ""}</td>
         <td class="actions"><button class="danger icon" data-del="${r.id}">ลบ</button></td>
       </tr>`;
     });
     const byType = {};
     rows.forEach(r=>{ byType[r.type] = (byType[r.type]||0)+r.qty; });
     const sumQty = rows.reduce((s,r)=>s+r.qty,0);
+    const sumPrice = rows.reduce((s,r)=>s+(+r.price||0),0);
     const typeText = Object.keys(byType).join(" / ");
-    html += `<tr class="sum"><td colspan="2">รวม</td><td>${sumQty}</td><td>${typeText}</td><td></td></tr>`;
+    html += `<tr class="sum"><td colspan="2">รวม</td><td>${sumQty}</td><td>${typeText}</td><td>${sumPrice ? formatMoney(sumPrice) : ""}</td><td></td></tr>`;
     rows.forEach(r=>{
       if(r.type==="พ่วง") totalPwang += r.qty;
       else if(r.type==="สิบล้อ") totalSibLor += r.qty;
+      totalPrice += (+r.price||0);
     });
   }
 
   if(totalPwang){
-    html += `<tr class="grand"><td class="label" rowspan="${(totalPwang && totalSibLor)?2:1}">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalPwang}</td><td>พ่วง</td></tr>`;
+    html += `<tr class="grand"><td class="label" rowspan="${(totalPwang && totalSibLor)?2:1}">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalPwang}</td><td>พ่วง</td><td></td></tr>`;
   }
   if(totalSibLor){
     if(!totalPwang){
-      html += `<tr class="grand"><td class="label">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td></tr>`;
+      html += `<tr class="grand"><td class="label">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td><td></td></tr>`;
     }else{
-      html += `<tr class="grand"><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td></tr>`;
+      html += `<tr class="grand"><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td><td></td></tr>`;
     }
   }
   const summaryParts = [];
   if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
   if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
-  html += `<tr class="grand"><td colspan="2"></td><td colspan="3" style="text-align:right;font-size:15px">${summaryParts.join("  •  ")}</td></tr>`;
+  html += `<tr class="grand"><td colspan="2"></td><td colspan="3" style="text-align:right;font-size:15px">${summaryParts.join("  •  ")}</td><td></td></tr>`;
+  html += `<tr class="grand"><td class="label" colspan="2">รวมเงินทั้งหมด</td><td colspan="3" style="text-align:right;font-size:15px"></td><td>${formatMoney(totalPrice)} บาท</td></tr>`;
 
   html += `</tbody></table></div>`;
   tableArea.innerHTML = html;
@@ -632,15 +644,17 @@ function render(){
       const i = records.findIndex(r=>r.id===id);
       if(i<0) return;
       const r = records[i];
+      const detail = {
+        "วันที่": formatThaiDate(r.date),
+        "ทะเบียน": r.plate,
+        "จำนวน": r.qty,
+        "ชนิดรถ": r.type
+      };
+      if(+r.price) detail["จำนวนเงิน"] = formatMoney(r.price) + " บาท";
       const ok = await showConfirm({
         title:"ลบรายการนี้?",
         message:"รายการนี้จะถูกลบออกจากตาราง",
-        detail:{
-          "วันที่": formatThaiDate(r.date),
-          "ทะเบียน": r.plate,
-          "จำนวน": r.qty,
-          "ชนิดรถ": r.type
-        },
+        detail,
         okText:"ลบ"
       });
       if(!ok) return;
@@ -655,6 +669,10 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function escapeAttr(s){ return escapeHtml(s); }
+function formatMoney(n){
+  const v = Number(n)||0;
+  return v.toLocaleString("th-TH", { minimumFractionDigits: Number.isInteger(v)?0:2, maximumFractionDigits: 2 });
+}
 
 function exportExcel(){
   const {records: filtered, label} = getFilteredRange();
@@ -662,45 +680,51 @@ function exportExcel(){
   const groups = groupByDate(filtered);
 
   const aoa = [
-    ["ใบวางบิล","","",""],
-    ["เฮียต้อม ยางพารา","","",""],
-    ["วันที่","ทะเบียนรถ","จำนวน","ชนิดรถ"]
+    ["ใบวางบิล","","","",""],
+    ["ร้านเฮียต้อม ยางพารา","","","",""],
+    ["วันที่","ทะเบียนรถ","จำนวน","ชนิดรถ","จำนวนเงิน"]
   ];
   const styleRows = ["title","brand","header"];
 
-  let totalPwang = 0, totalSibLor = 0;
+  let totalPwang = 0, totalSibLor = 0, totalPrice = 0;
 
   for(const [date, rows] of groups){
     rows.forEach((r,i)=>{
-      aoa.push([ i===0 ? formatThaiDate(date) : "", r.plate, r.qty, r.type ]);
+      const p = +r.price || 0;
+      aoa.push([ i===0 ? formatThaiDate(date) : "", r.plate, r.qty, r.type, p || "" ]);
       styleRows.push("data");
     });
     const byType = {};
     rows.forEach(r=>{ byType[r.type] = (byType[r.type]||0)+r.qty; });
     const sumQty = rows.reduce((s,r)=>s+r.qty,0);
+    const sumPrice = rows.reduce((s,r)=>s+(+r.price||0),0);
     const typeText = Object.keys(byType).join(" / ");
-    aoa.push(["รวม","", sumQty, typeText]);
+    aoa.push(["รวม","", sumQty, typeText, sumPrice || ""]);
     styleRows.push("sum");
     rows.forEach(r=>{
       if(r.type==="พ่วง") totalPwang += r.qty;
       else if(r.type==="สิบล้อ") totalSibLor += r.qty;
+      totalPrice += (+r.price||0);
     });
   }
 
-  if(totalPwang){ aoa.push(["ยอดรวมสุทธิ","","", totalPwang + " พ่วง"]); styleRows.push("grand"); }
-  if(totalSibLor){ aoa.push([totalPwang ? "":"ยอดรวมสุทธิ","","", totalSibLor + " สิบล้อ"]); styleRows.push("grand"); }
+  if(totalPwang){ aoa.push(["ยอดรวมสุทธิ","","", totalPwang + " พ่วง",""]); styleRows.push("grand"); }
+  if(totalSibLor){ aoa.push([totalPwang ? "":"ยอดรวมสุทธิ","","", totalSibLor + " สิบล้อ",""]); styleRows.push("grand"); }
   const summaryParts = [];
   if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
   if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
-  aoa.push(["", "", "", summaryParts.join(" ")]);
+  aoa.push(["", "", "", summaryParts.join(" "),""]);
+  styleRows.push("grand");
+  aoa.push(["รวมเงินทั้งหมด","","","", totalPrice]);
   styleRows.push("grand");
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{wch:14},{wch:22},{wch:10},{wch:18}];
+  ws["!cols"] = [{wch:14},{wch:22},{wch:10},{wch:18},{wch:16}];
 
   const border = { top:{style:"thin",color:{rgb:"000000"}}, bottom:{style:"thin",color:{rgb:"000000"}}, left:{style:"thin",color:{rgb:"000000"}}, right:{style:"thin",color:{rgb:"000000"}} };
   const baseFont = { name:"Sarabun", sz:12 };
 
+  const moneyFmt = '#,##0.00';
   const stylesByKind = {
     title:  { font:{...baseFont,bold:true,sz:20}, alignment:{horizontal:"center",vertical:"center"} },
     brand:  { font:{...baseFont,bold:true,sz:13}, alignment:{horizontal:"left",vertical:"center"} },
@@ -712,18 +736,23 @@ function exportExcel(){
 
   for(let R=0; R<aoa.length; R++){
     const kind = styleRows[R];
-    for(let C=0; C<4; C++){
+    for(let C=0; C<5; C++){
       const addr = XLSX.utils.encode_cell({r:R,c:C});
       if(!ws[addr]) ws[addr] = {t:"s",v:""};
-      ws[addr].s = stylesByKind[kind];
+      let style = stylesByKind[kind];
+      // money column: number format + right-align for data/sum/grand
+      if(C===4 && (kind==="data"||kind==="sum"||kind==="grand") && typeof ws[addr].v === "number"){
+        style = { ...style, numFmt: moneyFmt };
+      }
+      ws[addr].s = style;
     }
   }
 
   ws["!merges"] = ws["!merges"] || [];
-  // merge ใบวางบิล (title) ทั้ง 4 คอลัมน์
-  ws["!merges"].push({s:{r:0,c:0},e:{r:0,c:3}});
-  // merge เฮียต้อม ยางพารา (brand) ทั้ง 4 คอลัมน์ ชิดซ้าย
-  ws["!merges"].push({s:{r:1,c:0},e:{r:1,c:3}});
+  // merge ใบวางบิล (title) ทั้ง 5 คอลัมน์
+  ws["!merges"].push({s:{r:0,c:0},e:{r:0,c:4}});
+  // merge ร้านเฮียต้อม ยางพารา (brand) ทั้ง 5 คอลัมน์ ชิดซ้าย
+  ws["!merges"].push({s:{r:1,c:0},e:{r:1,c:4}});
   // ความสูงแถวหัวเรื่อง
   ws["!rows"] = ws["!rows"] || [];
   ws["!rows"][0] = { hpt: 32 };
@@ -732,6 +761,11 @@ function exportExcel(){
     if(styleRows[R] === "sum"){
       ws["!merges"].push({s:{r:R,c:0},e:{r:R,c:1}});
     }
+  }
+  // merge "รวมเงินทั้งหมด" cell ครอบ 4 คอลัมน์แรก
+  const lastRow = aoa.length - 1;
+  if(aoa[lastRow][0] === "รวมเงินทั้งหมด"){
+    ws["!merges"].push({s:{r:lastRow,c:0},e:{r:lastRow,c:3}});
   }
 
   const wb = XLSX.utils.book_new();

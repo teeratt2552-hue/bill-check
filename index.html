@@ -704,13 +704,13 @@ function exportExcel(){
     });
   }
 
-  if(totalPwang){ aoa.push(["ยอดรวมสุทธิ","","", totalPwang + " พ่วง",""]); styleRows.push("grand"); }
-  if(totalSibLor){ aoa.push([totalPwang ? "":"ยอดรวมสุทธิ","","", totalSibLor + " สิบล้อ",""]); styleRows.push("grand"); }
   const summaryParts = [];
   if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
   if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
-  aoa.push(["", "", "", summaryParts.join(" "),""]);
-  styleRows.push("grand");
+  if(summaryParts.length){
+    aoa.push(["ยอดรวมสุทธิ","","","", summaryParts.join(" ")]);
+    styleRows.push("grand");
+  }
   aoa.push(["รวมเงินทั้งหมด","","","", totalPrice]);
   styleRows.push("grand");
 
@@ -758,10 +758,11 @@ function exportExcel(){
       ws["!merges"].push({s:{r:R,c:0},e:{r:R,c:1}});
     }
   }
-  // merge "รวมเงินทั้งหมด" cell ครอบ 4 คอลัมน์แรก
-  const lastRow = aoa.length - 1;
-  if(aoa[lastRow][0] === "รวมเงินทั้งหมด"){
-    ws["!merges"].push({s:{r:lastRow,c:0},e:{r:lastRow,c:3}});
+  // merge "ยอดรวมสุทธิ" และ "รวมเงินทั้งหมด" ครอบ 4 คอลัมน์แรก
+  for(let R=0; R<aoa.length; R++){
+    if(aoa[R][0] === "ยอดรวมสุทธิ" || aoa[R][0] === "รวมเงินทั้งหมด"){
+      ws["!merges"].push({s:{r:R,c:0},e:{r:R,c:3}});
+    }
   }
 
   const wb = XLSX.utils.book_new();

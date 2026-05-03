@@ -4,90 +4,218 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ใบวางบิล - บันทึกรถเข้าออก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
   :root{
-    --header:#f4b43c;
-    --sum:#fff34d;
-    --total:#7fd0d6;
-    --total2:#5cb9c1;
-    --border:#222;
-    --bg:#f5f5f5;
+    --bg:#f6f7fb;
+    --surface:#ffffff;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --line-strong:#d1d5db;
+    --primary:#2563eb;
+    --primary-soft:#eff4ff;
+    --primary-strong:#1d4ed8;
+    --danger:#ef4444;
+    --danger-soft:#fef2f2;
+    --header:#fcd34d;
+    --header-text:#78350f;
+    --sum:#fff7c2;
+    --sum-text:#854d0e;
+    --total:#cffafe;
+    --total-text:#155e75;
+    --total2:#0e7490;
+    --shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.04);
+    --radius:14px;
   }
   *{box-sizing:border-box}
+  html,body{height:100%}
   body{
     font-family:"Sarabun","Segoe UI",Tahoma,sans-serif;
-    margin:0;padding:24px;background:var(--bg);color:#222;
+    margin:0;padding:32px 20px 56px;background:var(--bg);color:var(--text);
+    -webkit-font-smoothing:antialiased;
   }
-  h1{margin:0 0 16px;font-size:22px}
-  .wrap{max-width:1100px;margin:0 auto;display:grid;gap:20px}
+  .wrap{max-width:1080px;margin:0 auto;display:grid;gap:18px}
+  header.page{
+    display:flex;align-items:center;gap:14px;margin-bottom:6px;
+  }
+  header.page .logo{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(135deg,#fde68a,#fcd34d);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;box-shadow:var(--shadow);
+  }
+  header.page h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+  header.page p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
   .card{
-    background:#fff;border-radius:10px;padding:16px 18px;
-    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    box-shadow:var(--shadow);
   }
-  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-  .row > div{display:flex;flex-direction:column;gap:4px}
-  label{font-size:13px;color:#444}
-  input,select,button{
-    font:inherit;padding:8px 10px;border:1px solid #bbb;border-radius:6px;background:#fff;
+  .card h2{
+    margin:0 0 12px;font-size:14px;font-weight:600;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.6px;
   }
-  input:focus,select:focus{outline:2px solid #f4b43c;border-color:#f4b43c}
-  button{cursor:pointer;background:#f4b43c;border-color:#d99a1c;font-weight:600}
-  button:hover{background:#e8a82a}
-  button.ghost{background:#fff;border-color:#bbb;font-weight:500}
-  button.danger{background:#e25555;border-color:#b03a3a;color:#fff}
-  table{border-collapse:collapse;width:100%;background:#fff}
-  th,td{border:1px solid var(--border);padding:6px 10px;text-align:center;font-size:14px}
-  thead th{background:var(--header);font-weight:700}
-  tr.sum td{background:var(--sum);font-weight:700}
-  tr.grand td{background:var(--total);font-weight:700}
-  tr.grand td.label{background:var(--total2);color:#fff}
-  td.actions{white-space:nowrap}
-  td.actions button{padding:4px 8px;font-size:12px}
-  .filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .field.grow{flex:1;min-width:200px}
+  label{font-size:13px;color:var(--muted);font-weight:500}
+
+  input,select,button,textarea{
+    font:inherit;color:var(--text);
+    padding:10px 12px;border:1px solid var(--line-strong);
+    border-radius:10px;background:#fff;
+    transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
+  }
+  input::placeholder{color:#9ca3af}
+  input:hover,select:hover{border-color:#9ca3af}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(37,99,235,.12);
+  }
+
+  button{
+    cursor:pointer;background:var(--primary);color:#fff;
+    border-color:var(--primary);font-weight:600;
+    padding:10px 16px;
+  }
+  button:hover{background:var(--primary-strong);border-color:var(--primary-strong)}
+  button.ghost{background:#fff;color:var(--text);border-color:var(--line-strong);font-weight:500}
+  button.ghost:hover{background:#f9fafb;border-color:#9ca3af}
+  button.danger{background:#fff;color:var(--danger);border-color:#fecaca;font-weight:500}
+  button.danger:hover{background:var(--danger-soft);border-color:var(--danger)}
+  button.icon{padding:8px 10px;font-size:13px}
+
+  .filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
   .filter-bar .spacer{flex:1}
-  .empty{text-align:center;padding:24px;color:#888}
-  .small{font-size:12px;color:#666}
+
+  .plate-input-wrap{position:relative;display:flex;gap:8px;align-items:stretch;min-width:240px}
+  .plate-input-wrap input{flex:1}
+  .plate-input-wrap button{padding:0 12px;font-size:13px}
+
+  /* Table */
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--line)}
+  table{border-collapse:separate;border-spacing:0;width:100%;background:#fff;font-size:14px}
+  th,td{padding:10px 12px;text-align:center;border-bottom:1px solid var(--line)}
+  th + th, td + td{border-left:1px solid var(--line)}
+  thead th{
+    background:var(--header);color:var(--header-text);
+    font-weight:700;letter-spacing:.2px;
+    border-bottom:1px solid #e0a82e;
+  }
+  tbody tr:hover td{background:#fafbff}
+  tr.sum td{background:var(--sum);color:var(--sum-text);font-weight:700}
+  tr.sum td:hover, tbody tr.sum:hover td{background:var(--sum)}
+  tr.grand td{background:var(--total);color:var(--total-text);font-weight:700}
+  tr.grand td.label{background:var(--total2);color:#fff}
+  tr.grand:hover td{background:var(--total)}
+  tbody tr:last-child td{border-bottom:none}
+  td.actions button{padding:6px 10px;font-size:12px}
+
+  .range-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--primary-soft);color:var(--primary-strong);
+    padding:6px 10px;border-radius:999px;font-size:13px;font-weight:600;
+    margin-bottom:10px;
+  }
+
+  .empty{
+    text-align:center;padding:40px 12px;color:var(--muted);
+    background:#fafbff;border:1px dashed var(--line-strong);border-radius:10px;
+  }
+  .small{font-size:12px;color:var(--muted)}
+  .footer-note{text-align:center}
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(15,23,42,.4);
+    display:none;align-items:center;justify-content:center;z-index:50;
+    padding:16px;
+  }
+  .modal-backdrop.show{display:flex}
+  .modal{
+    background:#fff;border-radius:16px;max-width:480px;width:100%;
+    box-shadow:0 20px 60px rgba(15,23,42,.25);
+    border:1px solid var(--line);
+    overflow:hidden;display:flex;flex-direction:column;max-height:90vh;
+  }
+  .modal header{
+    padding:16px 20px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .modal header h3{margin:0;font-size:16px}
+  .modal .body{padding:16px 20px;overflow:auto}
+  .modal footer{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+  .plate-list{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;max-height:320px;overflow:auto}
+  .plate-list li{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 12px;border:1px solid var(--line);border-radius:10px;
+    background:#fafbff;
+  }
+  .plate-list code{font-family:inherit;font-weight:600}
+  .plate-list .pill{font-size:11px;background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;margin-left:8px}
+  .plate-list .actions{display:flex;gap:6px}
+
+  @media print{
+    body{background:#fff;padding:0}
+    .card.no-print, header.page, .footer-note, .modal-backdrop{display:none !important}
+    .card{box-shadow:none;border:none;padding:0}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>ใบวางบิล - บันทึกรถเข้าออก</h1>
+  <header class="page">
+    <div class="logo">🚛</div>
+    <div>
+      <h1>ใบวางบิล - บันทึกรถเข้าออก</h1>
+      <p>บันทึก ทะเบียนรถ จำนวน และส่งออกรายงานเป็น Excel</p>
+    </div>
+  </header>
 
-  <div class="card">
+  <div class="card no-print">
+    <h2>เพิ่มข้อมูล</h2>
     <form id="form" class="row">
-      <div>
-        <label>วันที่</label>
+      <div class="field">
+        <label for="date">วันที่</label>
         <input type="date" id="date" required>
       </div>
-      <div>
-        <label>ทะเบียนรถ</label>
-        <input type="text" id="plate" placeholder="เช่น 70-4198/4199" required style="min-width:200px">
+      <div class="field grow">
+        <label for="plate">ทะเบียนรถ</label>
+        <div class="plate-input-wrap">
+          <input type="text" id="plate" list="plateList" placeholder="พิมพ์หรือเลือกจากรายการ" required autocomplete="off">
+          <datalist id="plateList"></datalist>
+          <button type="button" class="ghost icon" id="managePlates" title="จัดการรายการทะเบียน">⚙ จัดการ</button>
+        </div>
       </div>
-      <div>
-        <label>จำนวน</label>
+      <div class="field">
+        <label for="qty">จำนวน</label>
         <input type="number" id="qty" value="1" min="1" required style="width:90px">
       </div>
-      <div>
-        <label>ชนิดรถ</label>
+      <div class="field">
+        <label for="type">ชนิดรถ</label>
         <select id="type" required>
           <option value="พ่วง">พ่วง</option>
           <option value="สิบล้อ">สิบล้อ</option>
         </select>
       </div>
-      <div>
-        <button type="submit">+ เพิ่มข้อมูล</button>
-      </div>
-      <div>
-        <button type="button" class="ghost" id="clearForm">ล้างฟอร์ม</button>
-      </div>
+      <div class="field"><button type="submit">+ เพิ่มข้อมูล</button></div>
+      <div class="field"><button type="button" class="ghost" id="clearForm">ล้างฟอร์ม</button></div>
     </form>
   </div>
 
-  <div class="card">
+  <div class="card no-print">
+    <h2>ตัวกรอง & ส่งออก</h2>
     <div class="filter-bar">
-      <div>
-        <label class="small">ช่วงเวลา</label><br>
+      <div class="field">
+        <label for="range">ช่วงเวลา</label>
         <select id="range">
           <option value="all">ทั้งหมด</option>
           <option value="day">รายวัน</option>
@@ -95,14 +223,14 @@
           <option value="month">รายเดือน</option>
         </select>
       </div>
-      <div id="anchorWrap" style="display:none">
-        <label class="small">อ้างอิงวันที่</label><br>
+      <div class="field" id="anchorWrap" style="display:none">
+        <label for="anchor">อ้างอิงวันที่</label>
         <input type="date" id="anchor">
       </div>
       <div class="spacer"></div>
-      <button type="button" id="exportBtn">⬇ Export Excel</button>
-      <button type="button" class="ghost" id="printBtn">🖨 พิมพ์</button>
-      <button type="button" class="danger" id="clearAll">ลบข้อมูลทั้งหมด</button>
+      <div class="field"><button type="button" id="exportBtn">⬇ Export Excel</button></div>
+      <div class="field"><button type="button" class="ghost" id="printBtn">🖨 พิมพ์</button></div>
+      <div class="field"><button type="button" class="danger" id="clearAll">ลบข้อมูลทั้งหมด</button></div>
     </div>
   </div>
 
@@ -110,14 +238,50 @@
     <div id="tableArea"></div>
   </div>
 
-  <p class="small">ข้อมูลถูกบันทึกในเครื่องของคุณ (LocalStorage) ปลอดภัย ไม่ได้อัปโหลดที่ไหน</p>
+  <p class="small footer-note">💾 ข้อมูลถูกบันทึกในเครื่องของคุณ (LocalStorage) — ไม่ได้อัปโหลดไปที่ใด</p>
+</div>
+
+<!-- Plate management modal -->
+<div class="modal-backdrop" id="plateModal">
+  <div class="modal">
+    <header>
+      <h3>จัดการทะเบียนรถ</h3>
+      <button type="button" class="ghost icon" id="closePlateModal">✕</button>
+    </header>
+    <div class="body">
+      <form id="addPlateForm" class="row" style="margin-bottom:14px">
+        <div class="field grow">
+          <label for="newPlate">เพิ่มทะเบียนใหม่</label>
+          <input type="text" id="newPlate" placeholder="เช่น 70-1234/5678" autocomplete="off">
+        </div>
+        <div class="field"><button type="submit">+ เพิ่ม</button></div>
+      </form>
+      <ul class="plate-list" id="plateListUl"></ul>
+    </div>
+    <footer>
+      <button type="button" class="ghost" id="closePlateModal2">ปิด</button>
+    </footer>
+  </div>
 </div>
 
 <script>
 const STORE_KEY = "billing-truck-records-v1";
+const PLATE_KEY = "billing-truck-plates-v1";
+
+// ทะเบียนเริ่มต้น (จากภาพตัวอย่าง)
+const DEFAULT_PLATES = [
+  "70-4198/4199",
+  "70-3810/3811",
+  "70-4368/4369",
+  "83-9357/9358",
+  "70-4471/4472",
+  "70-3810"
+];
 
 const $ = sel => document.querySelector(sel);
-const records = load();
+const records = loadJson(STORE_KEY, []);
+let plates = loadJson(PLATE_KEY, null);
+if(!plates){ plates = [...DEFAULT_PLATES]; savePlates(); }
 
 const form = $("#form");
 const dateEl = $("#date");
@@ -128,6 +292,9 @@ const rangeEl = $("#range");
 const anchorEl = $("#anchor");
 const anchorWrap = $("#anchorWrap");
 const tableArea = $("#tableArea");
+const plateListEl = $("#plateList");
+const plateModal = $("#plateModal");
+const plateListUl = $("#plateListUl");
 
 (function initDates(){
   const today = new Date();
@@ -136,18 +303,28 @@ const tableArea = $("#tableArea");
   anchorEl.value = iso;
 })();
 
+renderPlateOptions();
+render();
+
 form.addEventListener("submit", e => {
   e.preventDefault();
+  const plate = plateEl.value.trim();
   const rec = {
     id: crypto.randomUUID(),
     date: dateEl.value,
-    plate: plateEl.value.trim(),
+    plate,
     qty: parseInt(qtyEl.value,10) || 1,
     type: typeEl.value
   };
   if(!rec.date || !rec.plate) return;
   records.push(rec);
-  save();
+  saveRecords();
+  // จำทะเบียนไว้ในรายการอัตโนมัติ
+  if(plate && !plates.includes(plate)){
+    plates.push(plate);
+    savePlates();
+    renderPlateOptions();
+  }
   plateEl.value = "";
   qtyEl.value = 1;
   plateEl.focus();
@@ -162,7 +339,7 @@ $("#clearAll").addEventListener("click",()=>{
   if(!records.length) return;
   if(!confirm("ลบข้อมูลทั้งหมดใช่หรือไม่?")) return;
   records.length = 0;
-  save();
+  saveRecords();
   render();
 });
 
@@ -175,13 +352,87 @@ anchorEl.addEventListener("change", render);
 $("#exportBtn").addEventListener("click", exportExcel);
 $("#printBtn").addEventListener("click", ()=>window.print());
 
-function load(){
-  try{ return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); }
-  catch{ return []; }
+// Plate management
+$("#managePlates").addEventListener("click", openPlateModal);
+$("#closePlateModal").addEventListener("click", closePlateModal);
+$("#closePlateModal2").addEventListener("click", closePlateModal);
+plateModal.addEventListener("click",e=>{ if(e.target===plateModal) closePlateModal(); });
+$("#addPlateForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const v = $("#newPlate").value.trim();
+  if(!v) return;
+  if(plates.includes(v)){ alert("มีทะเบียนนี้อยู่แล้ว"); return; }
+  plates.push(v);
+  savePlates();
+  $("#newPlate").value = "";
+  renderPlateOptions();
+  renderPlateModalList();
+});
+
+function openPlateModal(){
+  plateModal.classList.add("show");
+  renderPlateModalList();
+  setTimeout(()=>$("#newPlate").focus(),60);
 }
-function save(){
-  localStorage.setItem(STORE_KEY, JSON.stringify(records));
+function closePlateModal(){ plateModal.classList.remove("show"); }
+
+function renderPlateOptions(){
+  plateListEl.innerHTML = plates
+    .slice()
+    .sort((a,b)=>a.localeCompare(b))
+    .map(p=>`<option value="${escapeAttr(p)}"></option>`).join("");
 }
+
+function renderPlateModalList(){
+  if(!plates.length){
+    plateListUl.innerHTML = `<div class="small" style="text-align:center;padding:14px">ยังไม่มีทะเบียน</div>`;
+    return;
+  }
+  plateListUl.innerHTML = plates
+    .slice()
+    .sort((a,b)=>a.localeCompare(b))
+    .map(p=>{
+      const isDefault = DEFAULT_PLATES.includes(p);
+      return `<li>
+        <div><code>${escapeHtml(p)}</code>${isDefault?'<span class="pill">เริ่มต้น</span>':''}</div>
+        <div class="actions">
+          <button type="button" class="ghost icon" data-edit="${escapeAttr(p)}">แก้ไข</button>
+          <button type="button" class="danger icon" data-rm="${escapeAttr(p)}">ลบ</button>
+        </div>
+      </li>`;
+    }).join("");
+  plateListUl.querySelectorAll("[data-rm]").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const v = b.getAttribute("data-rm");
+      if(!confirm(`ลบทะเบียน "${v}" ออกจากรายการ?`)) return;
+      plates = plates.filter(p=>p!==v);
+      savePlates();
+      renderPlateOptions();
+      renderPlateModalList();
+    });
+  });
+  plateListUl.querySelectorAll("[data-edit]").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const old = b.getAttribute("data-edit");
+      const nv = prompt("แก้ไขทะเบียน", old);
+      if(!nv || nv.trim()===old) return;
+      const v = nv.trim();
+      if(plates.includes(v)){ alert("มีทะเบียนนี้อยู่แล้ว"); return; }
+      const idx = plates.indexOf(old);
+      if(idx>=0){ plates[idx] = v; savePlates(); renderPlateOptions(); renderPlateModalList(); }
+    });
+  });
+}
+
+function loadJson(key, fallback){
+  try{
+    const v = localStorage.getItem(key);
+    if(v===null) return fallback;
+    return JSON.parse(v);
+  }catch{ return fallback; }
+}
+function saveRecords(){ localStorage.setItem(STORE_KEY, JSON.stringify(records)); }
+function savePlates(){ localStorage.setItem(PLATE_KEY, JSON.stringify(plates)); }
 
 function formatThaiDate(iso){
   if(!iso) return "";
@@ -200,8 +451,7 @@ function getFilteredRange(){
     start = new Date(a); end = new Date(a);
     label = `วันที่ ${formatThaiDate(anchor)}`;
   }else if(mode === "week"){
-    // สัปดาห์ จันทร์-อาทิตย์
-    const day = a.getDay(); // 0=Sun..6=Sat
+    const day = a.getDay();
     const diffToMon = (day === 0 ? -6 : 1 - day);
     start = new Date(a); start.setDate(a.getDate()+diffToMon);
     end = new Date(start); end.setDate(start.getDate()+6);
@@ -235,12 +485,13 @@ function groupByDate(list){
 
 function render(){
   const {records: filtered, label} = getFilteredRange();
+  const tag = label === "ทั้งหมด" ? "" : `<div class="range-tag">📅 ${label}</div>`;
   if(!filtered.length){
-    tableArea.innerHTML = `<div class="empty">ยังไม่มีข้อมูลในช่วง${label === "ทั้งหมด" ? "นี้" : ` ${label}`}</div>`;
+    tableArea.innerHTML = tag + `<div class="empty">ยังไม่มีข้อมูล — เพิ่มข้อมูลด้านบนเพื่อเริ่มต้น</div>`;
     return;
   }
   const groups = groupByDate(filtered);
-  let html = `<table id="dataTable">
+  let html = tag + `<div class="table-wrap"><table id="dataTable">
     <thead><tr><th>วันที่</th><th>ทะเบียนรถ</th><th>จำนวน</th><th>ชนิดรถ</th><th>จัดการ</th></tr></thead><tbody>`;
 
   let totalPwang = 0, totalSibLor = 0;
@@ -252,14 +503,13 @@ function render(){
         <td>${escapeHtml(r.plate)}</td>
         <td>${r.qty}</td>
         <td>${escapeHtml(r.type)}</td>
-        <td class="actions"><button class="ghost" data-del="${r.id}">ลบ</button></td>
+        <td class="actions"><button class="danger icon" data-del="${r.id}">ลบ</button></td>
       </tr>`;
     });
-    // subtotal per date - by type
     const byType = {};
     rows.forEach(r=>{ byType[r.type] = (byType[r.type]||0)+r.qty; });
     const sumQty = rows.reduce((s,r)=>s+r.qty,0);
-    const typeText = Object.entries(byType).map(([t,q])=>`${t}`).join(" / ");
+    const typeText = Object.keys(byType).join(" / ");
     html += `<tr class="sum"><td colspan="2">รวม</td><td>${sumQty}</td><td>${typeText}</td><td></td></tr>`;
     rows.forEach(r=>{
       if(r.type==="พ่วง") totalPwang += r.qty;
@@ -267,7 +517,6 @@ function render(){
     });
   }
 
-  // grand total
   if(totalPwang){
     html += `<tr class="grand"><td class="label" rowspan="${(totalPwang && totalSibLor)?2:1}">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalPwang}</td><td>พ่วง</td></tr>`;
   }
@@ -281,19 +530,16 @@ function render(){
   const summaryParts = [];
   if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
   if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
-  html += `<tr class="grand"><td colspan="2"></td><td colspan="3" style="text-align:right;font-size:16px">${summaryParts.join(" ")}</td></tr>`;
+  html += `<tr class="grand"><td colspan="2"></td><td colspan="3" style="text-align:right;font-size:15px">${summaryParts.join("  •  ")}</td></tr>`;
 
-  html += `</tbody></table>`;
-  if(label !== "ทั้งหมด"){
-    html = `<div style="margin-bottom:8px;font-weight:600">ช่วง: ${label}</div>` + html;
-  }
+  html += `</tbody></table></div>`;
   tableArea.innerHTML = html;
 
   tableArea.querySelectorAll("[data-del]").forEach(btn=>{
     btn.addEventListener("click",()=>{
       const id = btn.getAttribute("data-del");
       const i = records.findIndex(r=>r.id===id);
-      if(i>=0){ records.splice(i,1); save(); render(); }
+      if(i>=0){ records.splice(i,1); saveRecords(); render(); }
     });
   });
 }
@@ -301,6 +547,7 @@ function render(){
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+function escapeAttr(s){ return escapeHtml(s); }
 
 function exportExcel(){
   const {records: filtered, label} = getFilteredRange();
@@ -308,8 +555,7 @@ function exportExcel(){
   const groups = groupByDate(filtered);
 
   const aoa = [["วันที่","ทะเบียนรถ","จำนวน","ชนิดรถ"]];
-  const styleRows = []; // info per row index for styling
-  styleRows.push("header");
+  const styleRows = ["header"];
 
   let totalPwang = 0, totalSibLor = 0;
 
@@ -330,7 +576,6 @@ function exportExcel(){
     });
   }
 
-  const grandRowsBefore = aoa.length;
   if(totalPwang){ aoa.push(["ยอดรวมสุทธิ","","", totalPwang + " พ่วง"]); styleRows.push("grand"); }
   if(totalSibLor){ aoa.push([totalPwang ? "":"ยอดรวมสุทธิ","","", totalSibLor + " สิบล้อ"]); styleRows.push("grand"); }
   const summaryParts = [];
@@ -346,10 +591,10 @@ function exportExcel(){
   const baseFont = { name:"Sarabun", sz:12 };
 
   const stylesByKind = {
-    header: { fill:{fgColor:{rgb:"F4B43C"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
-    data: { font: baseFont, alignment:{horizontal:"center",vertical:"center"}, border },
-    sum: { fill:{fgColor:{rgb:"FFF34D"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
-    grand: { fill:{fgColor:{rgb:"7FD0D6"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border }
+    header: { fill:{fgColor:{rgb:"FCD34D"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
+    data:   { font: baseFont, alignment:{horizontal:"center",vertical:"center"}, border },
+    sum:    { fill:{fgColor:{rgb:"FFF7C2"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
+    grand:  { fill:{fgColor:{rgb:"CFFAFE"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border }
   };
 
   for(let R=0; R<aoa.length; R++){
@@ -361,7 +606,6 @@ function exportExcel(){
     }
   }
 
-  // merge รวม cells (col 0 + 1)
   ws["!merges"] = ws["!merges"] || [];
   for(let R=0; R<aoa.length; R++){
     if(styleRows[R] === "sum"){
@@ -375,8 +619,6 @@ function exportExcel(){
   const safeLabel = label.replace(/[\\/:*?"<>|]/g,"-");
   XLSX.writeFile(wb, `ใบวางบิล_${safeLabel}_${today}.xlsx`);
 }
-
-render();
 </script>
 </body>
 </html>

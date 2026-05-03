@@ -40,16 +40,16 @@
   }
   .wrap{max-width:1080px;margin:0 auto;display:grid;gap:18px}
   header.page{
-    display:flex;align-items:center;gap:14px;margin-bottom:6px;
+    display:flex;align-items:center;justify-content:center;margin-bottom:6px;
   }
-  header.page .logo{
-    width:42px;height:42px;border-radius:12px;
-    background:linear-gradient(135deg,#fde68a,#fcd34d);
-    display:flex;align-items:center;justify-content:center;
-    font-size:22px;box-shadow:var(--shadow);
+  header.page h1{
+    margin:0;font-size:30px;font-weight:700;letter-spacing:1px;
+    text-align:center;
   }
-  header.page h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
-  header.page p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .brand{
+    font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.4px;
+    margin-bottom:8px;
+  }
 
   .card{
     background:var(--surface);
@@ -173,14 +173,11 @@
 <body>
 <div class="wrap">
   <header class="page">
-    <div class="logo">🚛</div>
-    <div>
-      <h1>ใบวางบิล - บันทึกรถเข้าออก</h1>
-      <p>บันทึก ทะเบียนรถ จำนวน และส่งออกรายงานเป็น Excel</p>
-    </div>
+    <h1>ใบวางบิล</h1>
   </header>
 
   <div class="card no-print">
+    <div class="brand">เฮียต้อม ยางพารา</div>
     <h2>เพิ่มข้อมูล</h2>
     <form id="form" class="row">
       <div class="field">
@@ -238,7 +235,6 @@
     <div id="tableArea"></div>
   </div>
 
-  <p class="small footer-note">💾 ข้อมูลถูกบันทึกในเครื่องของคุณ (LocalStorage) — ไม่ได้อัปโหลดไปที่ใด</p>
 </div>
 
 <!-- Plate management modal -->
@@ -539,7 +535,13 @@ function render(){
     btn.addEventListener("click",()=>{
       const id = btn.getAttribute("data-del");
       const i = records.findIndex(r=>r.id===id);
-      if(i>=0){ records.splice(i,1); saveRecords(); render(); }
+      if(i<0) return;
+      const r = records[i];
+      const msg = `ยืนยันลบรายการนี้?\n\nวันที่: ${formatThaiDate(r.date)}\nทะเบียน: ${r.plate}\nจำนวน: ${r.qty} ${r.type}`;
+      if(!confirm(msg)) return;
+      records.splice(i,1);
+      saveRecords();
+      render();
     });
   });
 }
@@ -554,8 +556,12 @@ function exportExcel(){
   if(!filtered.length){ alert("ไม่มีข้อมูลให้ export"); return; }
   const groups = groupByDate(filtered);
 
-  const aoa = [["วันที่","ทะเบียนรถ","จำนวน","ชนิดรถ"]];
-  const styleRows = ["header"];
+  const aoa = [
+    ["ใบวางบิล","","",""],
+    ["เฮียต้อม ยางพารา","","",""],
+    ["วันที่","ทะเบียนรถ","จำนวน","ชนิดรถ"]
+  ];
+  const styleRows = ["title","brand","header"];
 
   let totalPwang = 0, totalSibLor = 0;
 
@@ -591,6 +597,8 @@ function exportExcel(){
   const baseFont = { name:"Sarabun", sz:12 };
 
   const stylesByKind = {
+    title:  { font:{...baseFont,bold:true,sz:20}, alignment:{horizontal:"center",vertical:"center"} },
+    brand:  { font:{...baseFont,bold:true,sz:13}, alignment:{horizontal:"left",vertical:"center"} },
     header: { fill:{fgColor:{rgb:"FCD34D"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
     data:   { font: baseFont, alignment:{horizontal:"center",vertical:"center"}, border },
     sum:    { fill:{fgColor:{rgb:"FFF7C2"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
@@ -607,6 +615,14 @@ function exportExcel(){
   }
 
   ws["!merges"] = ws["!merges"] || [];
+  // merge ใบวางบิล (title) ทั้ง 4 คอลัมน์
+  ws["!merges"].push({s:{r:0,c:0},e:{r:0,c:3}});
+  // merge เฮียต้อม ยางพารา (brand) ทั้ง 4 คอลัมน์ ชิดซ้าย
+  ws["!merges"].push({s:{r:1,c:0},e:{r:1,c:3}});
+  // ความสูงแถวหัวเรื่อง
+  ws["!rows"] = ws["!rows"] || [];
+  ws["!rows"][0] = { hpt: 32 };
+  ws["!rows"][1] = { hpt: 20 };
   for(let R=0; R<aoa.length; R++){
     if(styleRows[R] === "sum"){
       ws["!merges"].push({s:{r:R,c:0},e:{r:R,c:1}});

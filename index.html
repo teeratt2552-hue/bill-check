@@ -135,16 +135,20 @@
 
   /* Modal */
   .modal-backdrop{
-    position:fixed;inset:0;background:rgba(15,23,42,.4);
+    position:fixed;inset:0;background:rgba(15,23,42,.45);
     display:none;align-items:center;justify-content:center;z-index:50;
-    padding:16px;
+    padding:16px;backdrop-filter:blur(2px);
+    animation:fadeIn .15s ease;
   }
   .modal-backdrop.show{display:flex}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes popIn{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
   .modal{
     background:#fff;border-radius:16px;max-width:480px;width:100%;
     box-shadow:0 20px 60px rgba(15,23,42,.25);
     border:1px solid var(--line);
     overflow:hidden;display:flex;flex-direction:column;max-height:90vh;
+    animation:popIn .18s ease;
   }
   .modal header{
     padding:16px 20px;border-bottom:1px solid var(--line);
@@ -153,6 +157,40 @@
   .modal header h3{margin:0;font-size:16px}
   .modal .body{padding:16px 20px;overflow:auto}
   .modal footer{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+
+  /* Confirm dialog */
+  .confirm{
+    background:#fff;border-radius:16px;max-width:420px;width:100%;
+    box-shadow:0 20px 60px rgba(15,23,42,.25);
+    border:1px solid var(--line);overflow:hidden;
+    animation:popIn .18s ease;
+  }
+  .confirm .top{
+    display:flex;gap:14px;align-items:flex-start;padding:22px 22px 6px;
+  }
+  .confirm .ic{
+    flex:none;width:44px;height:44px;border-radius:50%;
+    background:var(--danger-soft);color:var(--danger);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+  }
+  .confirm .ic.warn{background:#fff7ed;color:#ea580c}
+  .confirm h3{margin:0 0 4px;font-size:17px;font-weight:700}
+  .confirm p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .confirm .detail{
+    margin:14px 22px 0;padding:12px 14px;
+    background:#f9fafb;border:1px solid var(--line);border-radius:10px;
+    font-size:13px;line-height:1.7;
+  }
+  .confirm .detail .k{display:inline-block;min-width:64px;color:var(--muted)}
+  .confirm .detail .v{font-weight:600;color:var(--text)}
+  .confirm .actions{
+    padding:18px 22px 20px;display:flex;justify-content:flex-end;gap:8px;
+  }
+  .confirm button.confirm-danger{
+    background:var(--danger);color:#fff;border-color:var(--danger);
+  }
+  .confirm button.confirm-danger:hover{background:#dc2626;border-color:#dc2626}
   .plate-list{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;max-height:320px;overflow:auto}
   .plate-list li{
     display:flex;align-items:center;justify-content:space-between;
@@ -226,8 +264,6 @@
       </div>
       <div class="spacer"></div>
       <div class="field"><button type="button" id="exportBtn">⬇ Export Excel</button></div>
-      <div class="field"><button type="button" class="ghost" id="printBtn">🖨 พิมพ์</button></div>
-      <div class="field"><button type="button" class="danger" id="clearAll">ลบข้อมูลทั้งหมด</button></div>
     </div>
   </div>
 
@@ -235,6 +271,24 @@
     <div id="tableArea"></div>
   </div>
 
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-backdrop" id="confirmModal">
+  <div class="confirm" role="alertdialog" aria-modal="true">
+    <div class="top">
+      <div class="ic" id="confirmIcon">🗑</div>
+      <div>
+        <h3 id="confirmTitle">ยืนยันการลบ</h3>
+        <p id="confirmMessage">คุณต้องการลบรายการนี้ใช่หรือไม่?</p>
+      </div>
+    </div>
+    <div class="detail" id="confirmDetail" style="display:none"></div>
+    <div class="actions">
+      <button type="button" class="ghost" id="confirmCancel">ยกเลิก</button>
+      <button type="button" class="confirm-danger" id="confirmOk">ลบ</button>
+    </div>
+  </div>
 </div>
 
 <!-- Plate management modal -->
@@ -302,6 +356,50 @@ const plateListUl = $("#plateListUl");
 renderPlateOptions();
 render();
 
+// ===== Custom Confirm Dialog =====
+const confirmModal = $("#confirmModal");
+const confirmTitle = $("#confirmTitle");
+const confirmMessage = $("#confirmMessage");
+const confirmDetail = $("#confirmDetail");
+const confirmIcon = $("#confirmIcon");
+const confirmOk = $("#confirmOk");
+const confirmCancel = $("#confirmCancel");
+let _confirmResolve = null;
+
+function showConfirm({title="ยืนยัน", message="", detail=null, okText="ลบ", cancelText="ยกเลิก", icon="🗑", danger=true} = {}){
+  confirmTitle.textContent = title;
+  confirmMessage.textContent = message;
+  confirmIcon.textContent = icon;
+  confirmIcon.className = "ic" + (danger ? "" : " warn");
+  if(detail && Object.keys(detail).length){
+    confirmDetail.style.display = "";
+    confirmDetail.innerHTML = Object.entries(detail).map(([k,v])=>
+      `<div><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span></div>`
+    ).join("");
+  }else{
+    confirmDetail.style.display = "none";
+    confirmDetail.innerHTML = "";
+  }
+  confirmOk.textContent = okText;
+  confirmCancel.textContent = cancelText;
+  confirmOk.classList.toggle("confirm-danger", !!danger);
+  confirmModal.classList.add("show");
+  setTimeout(()=>confirmCancel.focus(),60);
+  return new Promise(resolve=>{ _confirmResolve = resolve; });
+}
+function closeConfirm(result){
+  confirmModal.classList.remove("show");
+  if(_confirmResolve){ _confirmResolve(result); _confirmResolve = null; }
+}
+confirmOk.addEventListener("click",()=>closeConfirm(true));
+confirmCancel.addEventListener("click",()=>closeConfirm(false));
+confirmModal.addEventListener("click",e=>{ if(e.target===confirmModal) closeConfirm(false); });
+document.addEventListener("keydown",e=>{
+  if(!confirmModal.classList.contains("show")) return;
+  if(e.key==="Escape") closeConfirm(false);
+  else if(e.key==="Enter"){ e.preventDefault(); closeConfirm(true); }
+});
+
 form.addEventListener("submit", e => {
   e.preventDefault();
   const plate = plateEl.value.trim();
@@ -331,14 +429,6 @@ $("#clearForm").addEventListener("click",()=>{
   plateEl.value=""; qtyEl.value=1; typeEl.value="พ่วง";
 });
 
-$("#clearAll").addEventListener("click",()=>{
-  if(!records.length) return;
-  if(!confirm("ลบข้อมูลทั้งหมดใช่หรือไม่?")) return;
-  records.length = 0;
-  saveRecords();
-  render();
-});
-
 rangeEl.addEventListener("change",()=>{
   anchorWrap.style.display = rangeEl.value === "all" ? "none" : "";
   render();
@@ -346,7 +436,6 @@ rangeEl.addEventListener("change",()=>{
 anchorEl.addEventListener("change", render);
 
 $("#exportBtn").addEventListener("click", exportExcel);
-$("#printBtn").addEventListener("click", ()=>window.print());
 
 // Plate management
 $("#managePlates").addEventListener("click", openPlateModal);
@@ -398,9 +487,15 @@ function renderPlateModalList(){
       </li>`;
     }).join("");
   plateListUl.querySelectorAll("[data-rm]").forEach(b=>{
-    b.addEventListener("click",()=>{
+    b.addEventListener("click", async ()=>{
       const v = b.getAttribute("data-rm");
-      if(!confirm(`ลบทะเบียน "${v}" ออกจากรายการ?`)) return;
+      const ok = await showConfirm({
+        title:"ลบทะเบียนนี้?",
+        message:"ทะเบียนนี้จะหายไปจากรายการตัวเลือก (ไม่กระทบข้อมูลที่บันทึกไว้)",
+        detail:{ "ทะเบียน": v },
+        okText:"ลบ"
+      });
+      if(!ok) return;
       plates = plates.filter(p=>p!==v);
       savePlates();
       renderPlateOptions();
@@ -532,13 +627,23 @@ function render(){
   tableArea.innerHTML = html;
 
   tableArea.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.addEventListener("click",()=>{
+    btn.addEventListener("click", async ()=>{
       const id = btn.getAttribute("data-del");
       const i = records.findIndex(r=>r.id===id);
       if(i<0) return;
       const r = records[i];
-      const msg = `ยืนยันลบรายการนี้?\n\nวันที่: ${formatThaiDate(r.date)}\nทะเบียน: ${r.plate}\nจำนวน: ${r.qty} ${r.type}`;
-      if(!confirm(msg)) return;
+      const ok = await showConfirm({
+        title:"ลบรายการนี้?",
+        message:"รายการนี้จะถูกลบออกจากตาราง",
+        detail:{
+          "วันที่": formatThaiDate(r.date),
+          "ทะเบียน": r.plate,
+          "จำนวน": r.qty,
+          "ชนิดรถ": r.type
+        },
+        okText:"ลบ"
+      });
+      if(!ok) return;
       records.splice(i,1);
       saveRecords();
       render();

@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ใบวางบิล - บันทึกรถเข้าออก</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+  :root{
+    --header:#f4b43c;
+    --sum:#fff34d;
+    --total:#7fd0d6;
+    --total2:#5cb9c1;
+    --border:#222;
+    --bg:#f5f5f5;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:"Sarabun","Segoe UI",Tahoma,sans-serif;
+    margin:0;padding:24px;background:var(--bg);color:#222;
+  }
+  h1{margin:0 0 16px;font-size:22px}
+  .wrap{max-width:1100px;margin:0 auto;display:grid;gap:20px}
+  .card{
+    background:#fff;border-radius:10px;padding:16px 18px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+  .row > div{display:flex;flex-direction:column;gap:4px}
+  label{font-size:13px;color:#444}
+  input,select,button{
+    font:inherit;padding:8px 10px;border:1px solid #bbb;border-radius:6px;background:#fff;
+  }
+  input:focus,select:focus{outline:2px solid #f4b43c;border-color:#f4b43c}
+  button{cursor:pointer;background:#f4b43c;border-color:#d99a1c;font-weight:600}
+  button:hover{background:#e8a82a}
+  button.ghost{background:#fff;border-color:#bbb;font-weight:500}
+  button.danger{background:#e25555;border-color:#b03a3a;color:#fff}
+  table{border-collapse:collapse;width:100%;background:#fff}
+  th,td{border:1px solid var(--border);padding:6px 10px;text-align:center;font-size:14px}
+  thead th{background:var(--header);font-weight:700}
+  tr.sum td{background:var(--sum);font-weight:700}
+  tr.grand td{background:var(--total);font-weight:700}
+  tr.grand td.label{background:var(--total2);color:#fff}
+  td.actions{white-space:nowrap}
+  td.actions button{padding:4px 8px;font-size:12px}
+  .filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .filter-bar .spacer{flex:1}
+  .empty{text-align:center;padding:24px;color:#888}
+  .small{font-size:12px;color:#666}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ใบวางบิล - บันทึกรถเข้าออก</h1>
+
+  <div class="card">
+    <form id="form" class="row">
+      <div>
+        <label>วันที่</label>
+        <input type="date" id="date" required>
+      </div>
+      <div>
+        <label>ทะเบียนรถ</label>
+        <input type="text" id="plate" placeholder="เช่น 70-4198/4199" required style="min-width:200px">
+      </div>
+      <div>
+        <label>จำนวน</label>
+        <input type="number" id="qty" value="1" min="1" required style="width:90px">
+      </div>
+      <div>
+        <label>ชนิดรถ</label>
+        <select id="type" required>
+          <option value="พ่วง">พ่วง</option>
+          <option value="สิบล้อ">สิบล้อ</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit">+ เพิ่มข้อมูล</button>
+      </div>
+      <div>
+        <button type="button" class="ghost" id="clearForm">ล้างฟอร์ม</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="filter-bar">
+      <div>
+        <label class="small">ช่วงเวลา</label><br>
+        <select id="range">
+          <option value="all">ทั้งหมด</option>
+          <option value="day">รายวัน</option>
+          <option value="week">รายสัปดาห์</option>
+          <option value="month">รายเดือน</option>
+        </select>
+      </div>
+      <div id="anchorWrap" style="display:none">
+        <label class="small">อ้างอิงวันที่</label><br>
+        <input type="date" id="anchor">
+      </div>
+      <div class="spacer"></div>
+      <button type="button" id="exportBtn">⬇ Export Excel</button>
+      <button type="button" class="ghost" id="printBtn">🖨 พิมพ์</button>
+      <button type="button" class="danger" id="clearAll">ลบข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+
+  <div class="card" id="tableCard">
+    <div id="tableArea"></div>
+  </div>
+
+  <p class="small">ข้อมูลถูกบันทึกในเครื่องของคุณ (LocalStorage) ปลอดภัย ไม่ได้อัปโหลดที่ไหน</p>
+</div>
+
+<script>
+const STORE_KEY = "billing-truck-records-v1";
+
+const $ = sel => document.querySelector(sel);
+const records = load();
+
+const form = $("#form");
+const dateEl = $("#date");
+const plateEl = $("#plate");
+const qtyEl = $("#qty");
+const typeEl = $("#type");
+const rangeEl = $("#range");
+const anchorEl = $("#anchor");
+const anchorWrap = $("#anchorWrap");
+const tableArea = $("#tableArea");
+
+(function initDates(){
+  const today = new Date();
+  const iso = today.toISOString().slice(0,10);
+  dateEl.value = iso;
+  anchorEl.value = iso;
+})();
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const rec = {
+    id: crypto.randomUUID(),
+    date: dateEl.value,
+    plate: plateEl.value.trim(),
+    qty: parseInt(qtyEl.value,10) || 1,
+    type: typeEl.value
+  };
+  if(!rec.date || !rec.plate) return;
+  records.push(rec);
+  save();
+  plateEl.value = "";
+  qtyEl.value = 1;
+  plateEl.focus();
+  render();
+});
+
+$("#clearForm").addEventListener("click",()=>{
+  plateEl.value=""; qtyEl.value=1; typeEl.value="พ่วง";
+});
+
+$("#clearAll").addEventListener("click",()=>{
+  if(!records.length) return;
+  if(!confirm("ลบข้อมูลทั้งหมดใช่หรือไม่?")) return;
+  records.length = 0;
+  save();
+  render();
+});
+
+rangeEl.addEventListener("change",()=>{
+  anchorWrap.style.display = rangeEl.value === "all" ? "none" : "";
+  render();
+});
+anchorEl.addEventListener("change", render);
+
+$("#exportBtn").addEventListener("click", exportExcel);
+$("#printBtn").addEventListener("click", ()=>window.print());
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); }
+  catch{ return []; }
+}
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(records));
+}
+
+function formatThaiDate(iso){
+  if(!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function getFilteredRange(){
+  const mode = rangeEl.value;
+  if(mode === "all") return { records: [...records], label: "ทั้งหมด" };
+  const anchor = anchorEl.value || new Date().toISOString().slice(0,10);
+  const a = new Date(anchor + "T00:00:00");
+  let start, end, label;
+
+  if(mode === "day"){
+    start = new Date(a); end = new Date(a);
+    label = `วันที่ ${formatThaiDate(anchor)}`;
+  }else if(mode === "week"){
+    // สัปดาห์ จันทร์-อาทิตย์
+    const day = a.getDay(); // 0=Sun..6=Sat
+    const diffToMon = (day === 0 ? -6 : 1 - day);
+    start = new Date(a); start.setDate(a.getDate()+diffToMon);
+    end = new Date(start); end.setDate(start.getDate()+6);
+    label = `สัปดาห์ ${formatThaiDate(toISO(start))} - ${formatThaiDate(toISO(end))}`;
+  }else if(mode === "month"){
+    start = new Date(a.getFullYear(), a.getMonth(), 1);
+    end = new Date(a.getFullYear(), a.getMonth()+1, 0);
+    const monthNames = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+    label = `เดือน ${monthNames[a.getMonth()]} ${a.getFullYear()}`;
+  }
+  const sIso = toISO(start), eIso = toISO(end);
+  const filtered = records.filter(r => r.date >= sIso && r.date <= eIso);
+  return { records: filtered, label };
+}
+
+function toISO(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function groupByDate(list){
+  const map = new Map();
+  for(const r of list){
+    if(!map.has(r.date)) map.set(r.date, []);
+    map.get(r.date).push(r);
+  }
+  return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+}
+
+function render(){
+  const {records: filtered, label} = getFilteredRange();
+  if(!filtered.length){
+    tableArea.innerHTML = `<div class="empty">ยังไม่มีข้อมูลในช่วง${label === "ทั้งหมด" ? "นี้" : ` ${label}`}</div>`;
+    return;
+  }
+  const groups = groupByDate(filtered);
+  let html = `<table id="dataTable">
+    <thead><tr><th>วันที่</th><th>ทะเบียนรถ</th><th>จำนวน</th><th>ชนิดรถ</th><th>จัดการ</th></tr></thead><tbody>`;
+
+  let totalPwang = 0, totalSibLor = 0;
+
+  for(const [date, rows] of groups){
+    rows.forEach((r,i)=>{
+      html += `<tr>
+        <td>${i===0 ? formatThaiDate(date) : ""}</td>
+        <td>${escapeHtml(r.plate)}</td>
+        <td>${r.qty}</td>
+        <td>${escapeHtml(r.type)}</td>
+        <td class="actions"><button class="ghost" data-del="${r.id}">ลบ</button></td>
+      </tr>`;
+    });
+    // subtotal per date - by type
+    const byType = {};
+    rows.forEach(r=>{ byType[r.type] = (byType[r.type]||0)+r.qty; });
+    const sumQty = rows.reduce((s,r)=>s+r.qty,0);
+    const typeText = Object.entries(byType).map(([t,q])=>`${t}`).join(" / ");
+    html += `<tr class="sum"><td colspan="2">รวม</td><td>${sumQty}</td><td>${typeText}</td><td></td></tr>`;
+    rows.forEach(r=>{
+      if(r.type==="พ่วง") totalPwang += r.qty;
+      else if(r.type==="สิบล้อ") totalSibLor += r.qty;
+    });
+  }
+
+  // grand total
+  if(totalPwang){
+    html += `<tr class="grand"><td class="label" rowspan="${(totalPwang && totalSibLor)?2:1}">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalPwang}</td><td>พ่วง</td></tr>`;
+  }
+  if(totalSibLor){
+    if(!totalPwang){
+      html += `<tr class="grand"><td class="label">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td></tr>`;
+    }else{
+      html += `<tr class="grand"><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td></tr>`;
+    }
+  }
+  const summaryParts = [];
+  if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
+  if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
+  html += `<tr class="grand"><td colspan="2"></td><td colspan="3" style="text-align:right;font-size:16px">${summaryParts.join(" ")}</td></tr>`;
+
+  html += `</tbody></table>`;
+  if(label !== "ทั้งหมด"){
+    html = `<div style="margin-bottom:8px;font-weight:600">ช่วง: ${label}</div>` + html;
+  }
+  tableArea.innerHTML = html;
+
+  tableArea.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id = btn.getAttribute("data-del");
+      const i = records.findIndex(r=>r.id===id);
+      if(i>=0){ records.splice(i,1); save(); render(); }
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function exportExcel(){
+  const {records: filtered, label} = getFilteredRange();
+  if(!filtered.length){ alert("ไม่มีข้อมูลให้ export"); return; }
+  const groups = groupByDate(filtered);
+
+  const aoa = [["วันที่","ทะเบียนรถ","จำนวน","ชนิดรถ"]];
+  const styleRows = []; // info per row index for styling
+  styleRows.push("header");
+
+  let totalPwang = 0, totalSibLor = 0;
+
+  for(const [date, rows] of groups){
+    rows.forEach((r,i)=>{
+      aoa.push([ i===0 ? formatThaiDate(date) : "", r.plate, r.qty, r.type ]);
+      styleRows.push("data");
+    });
+    const byType = {};
+    rows.forEach(r=>{ byType[r.type] = (byType[r.type]||0)+r.qty; });
+    const sumQty = rows.reduce((s,r)=>s+r.qty,0);
+    const typeText = Object.keys(byType).join(" / ");
+    aoa.push(["รวม","", sumQty, typeText]);
+    styleRows.push("sum");
+    rows.forEach(r=>{
+      if(r.type==="พ่วง") totalPwang += r.qty;
+      else if(r.type==="สิบล้อ") totalSibLor += r.qty;
+    });
+  }
+
+  const grandRowsBefore = aoa.length;
+  if(totalPwang){ aoa.push(["ยอดรวมสุทธิ","","", totalPwang + " พ่วง"]); styleRows.push("grand"); }
+  if(totalSibLor){ aoa.push([totalPwang ? "":"ยอดรวมสุทธิ","","", totalSibLor + " สิบล้อ"]); styleRows.push("grand"); }
+  const summaryParts = [];
+  if(totalPwang) summaryParts.push(`${totalPwang} พ่วง`);
+  if(totalSibLor) summaryParts.push(`${totalSibLor} สิบล้อ`);
+  aoa.push(["", "", "", summaryParts.join(" ")]);
+  styleRows.push("grand");
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = [{wch:14},{wch:22},{wch:10},{wch:18}];
+
+  const border = { top:{style:"thin",color:{rgb:"000000"}}, bottom:{style:"thin",color:{rgb:"000000"}}, left:{style:"thin",color:{rgb:"000000"}}, right:{style:"thin",color:{rgb:"000000"}} };
+  const baseFont = { name:"Sarabun", sz:12 };
+
+  const stylesByKind = {
+    header: { fill:{fgColor:{rgb:"F4B43C"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
+    data: { font: baseFont, alignment:{horizontal:"center",vertical:"center"}, border },
+    sum: { fill:{fgColor:{rgb:"FFF34D"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border },
+    grand: { fill:{fgColor:{rgb:"7FD0D6"}}, font:{...baseFont,bold:true}, alignment:{horizontal:"center",vertical:"center"}, border }
+  };
+
+  for(let R=0; R<aoa.length; R++){
+    const kind = styleRows[R];
+    for(let C=0; C<4; C++){
+      const addr = XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr]) ws[addr] = {t:"s",v:""};
+      ws[addr].s = stylesByKind[kind];
+    }
+  }
+
+  // merge รวม cells (col 0 + 1)
+  ws["!merges"] = ws["!merges"] || [];
+  for(let R=0; R<aoa.length; R++){
+    if(styleRows[R] === "sum"){
+      ws["!merges"].push({s:{r:R,c:0},e:{r:R,c:1}});
+    }
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "ใบวางบิล");
+  const today = new Date().toISOString().slice(0,10);
+  const safeLabel = label.replace(/[\\/:*?"<>|]/g,"-");
+  XLSX.writeFile(wb, `ใบวางบิล_${safeLabel}_${today}.xlsx`);
+}
+
+render();
+</script>
+</body>
+</html>

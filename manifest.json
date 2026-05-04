@@ -11,13 +11,13 @@
   "lang": "th",
   "icons": [
     {
-      "src": "icon.jpg",
+      "src": "/icon.jpg",
       "sizes": "any",
       "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "icon.jpg",
+      "src": "/icon.jpg",
       "sizes": "any",
       "type": "image/jpeg",
       "purpose": "maskable"

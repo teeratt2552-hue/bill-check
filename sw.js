@@ -1,10 +1,10 @@
 // Simple offline-first service worker
-const CACHE = "billing-v3";
+const CACHE = "billing-v4";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon.png",
+  "./icon.jpg",
   "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js",
   "https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap"
 ];

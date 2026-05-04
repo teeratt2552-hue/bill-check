@@ -1,5 +1,5 @@
 // Simple offline-first service worker
-const CACHE = "billing-v4";
+const CACHE = "billing-v5";
 const ASSETS = [
   "./",
   "./index.html",

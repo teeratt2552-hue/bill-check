@@ -122,13 +122,13 @@
   tbody tr.row-data{position:relative}
   td.has-x{position:relative;padding-right:36px}
   .btn-x{
-    position:absolute;top:50%;right:8px;transform:translateY(-50%) scale(.92);
-    width:22px;height:22px;padding:0;border-radius:50%;
-    background:#fef2f2;border:1px solid #fecaca;color:#ef4444;
+    position:absolute;top:50%;right:8px;transform:translateY(-50%);
+    width:20px;height:20px;padding:0;border-radius:4px;
+    background:transparent;border:none;color:#6b7280;
     font-size:0;line-height:0;
     display:inline-flex;align-items:center;justify-content:center;
-    opacity:0;cursor:pointer;
-    transition:opacity .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
+    opacity:1;cursor:pointer;
+    transition:color .15s ease, background .15s ease;
   }
   .btn-x::before{
     content:"";display:block;width:10px;height:10px;
@@ -136,14 +136,7 @@
     -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg>") center/contain no-repeat;
             mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg>") center/contain no-repeat;
   }
-  tbody tr.row-data:hover .btn-x,
-  .btn-x:focus-visible{ opacity:1; transform:translateY(-50%) scale(1) }
-  .btn-x:hover{
-    background:var(--danger);color:#fff;border-color:var(--danger);
-    transform:translateY(-50%) scale(1.08);
-    box-shadow:0 4px 10px rgba(239,68,68,.35);
-  }
-  .btn-x:active{ transform:translateY(-50%) scale(.96) }
+  .btn-x:hover{ color:#1f2937; background:#f3f4f6 }
 
   .range-tag{
     display:inline-flex;align-items:center;gap:6px;

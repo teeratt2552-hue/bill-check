@@ -1,0 +1,26 @@
+{
+  "name": "ใบวางบิล - ร้านเฮียต้อม ยางพารา",
+  "short_name": "ใบวางบิล",
+  "description": "บันทึกรถเข้าออก ทะเบียน จำนวน ชนิดรถ และจำนวนเงิน พร้อมส่งออก Excel",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f7fb",
+  "theme_color": "#fcd34d",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

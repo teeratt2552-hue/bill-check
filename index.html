@@ -2,8 +2,19 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ใบวางบิล - บันทึกรถเข้าออก</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ใบวางบิล - ร้านเฮียต้อม ยางพารา</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#fcd34d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ใบวางบิล">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -50,6 +61,8 @@
     font-size:17px;font-weight:700;color:var(--text);letter-spacing:.3px;
     margin:0 0 -4px 4px;
   }
+  @media (max-width: 900px){ header.page h1{font-size:26px} }
+  @media (max-width: 640px){ header.page h1{font-size:22px;letter-spacing:.5px} }
 
   .card{
     background:var(--surface);
@@ -261,7 +274,6 @@
   @media (max-width: 900px){
     body{padding:24px 16px 40px}
     .wrap{gap:14px}
-    header.page h1{font-size:26px}
     .card{padding:16px}
     .field.grow{flex-basis:100%}
     .filter-bar .spacer{display:none}
@@ -271,7 +283,6 @@
   @media (max-width: 640px){
     body{padding:16px 12px 32px;font-size:14px}
     .wrap{gap:12px}
-    header.page h1{font-size:22px;letter-spacing:.5px}
     .brand{font-size:15px;margin:0 0 -2px 2px}
     .card{padding:14px;border-radius:12px}
     .card h2{font-size:12px;margin-bottom:10px}
@@ -312,6 +323,21 @@
   @media (max-width: 380px){
     .confirm .actions{flex-direction:column-reverse}
     .confirm .actions button{width:100%}
+  }
+
+  /* Install app button */
+  #installBtn{
+    position:fixed;right:16px;bottom:16px;z-index:80;
+    padding:12px 18px;border-radius:999px;
+    background:var(--primary);color:#fff;border:none;font-weight:600;
+    box-shadow:0 8px 24px rgba(37,99,235,.35);
+    display:none;align-items:center;gap:8px;cursor:pointer;
+  }
+  #installBtn.show{display:inline-flex}
+  #installBtn:hover{background:var(--primary-strong)}
+  /* ซ่อนเมื่อรันในโหมด standalone (ติดตั้งแล้ว) */
+  @media (display-mode: standalone){
+    #installBtn{display:none !important}
   }
 
   @media print{
@@ -390,6 +416,9 @@
 
 </div>
 
+<!-- Install app button (PWA) -->
+<button id="installBtn" type="button" title="ติดตั้งเป็นแอป">📲 ติดตั้งแอป</button>
+
 <!-- Confirm modal -->
 <div class="modal-backdrop" id="confirmModal" style="z-index:100">
   <div class="confirm" role="alertdialog" aria-modal="true">
@@ -432,6 +461,36 @@
 </div>
 
 <script>
+// ===== PWA: register service worker + install prompt =====
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(err=>console.warn("SW failed", err));
+  });
+}
+let _deferredInstall = null;
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault();
+  _deferredInstall = e;
+  const btn = document.getElementById("installBtn");
+  if(btn) btn.classList.add("show");
+});
+window.addEventListener("appinstalled", ()=>{
+  _deferredInstall = null;
+  const btn = document.getElementById("installBtn");
+  if(btn) btn.classList.remove("show");
+});
+document.addEventListener("DOMContentLoaded", ()=>{
+  const btn = document.getElementById("installBtn");
+  if(!btn) return;
+  btn.addEventListener("click", async ()=>{
+    if(!_deferredInstall) return;
+    _deferredInstall.prompt();
+    const { outcome } = await _deferredInstall.userChoice;
+    if(outcome === "accepted") btn.classList.remove("show");
+    _deferredInstall = null;
+  });
+});
+
 const STORE_KEY = "billing-truck-records-v1";
 const PLATE_KEY = "billing-truck-plates-v1";
 

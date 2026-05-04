@@ -117,7 +117,33 @@
   tr.grand td.label{background:var(--total2);color:#fff}
   tr.grand:hover td{background:var(--total)}
   tbody tr:last-child td{border-bottom:none}
-  td.actions button{padding:6px 10px;font-size:12px}
+
+  /* Delete X button (no column) */
+  tbody tr.row-data{position:relative}
+  td.has-x{position:relative;padding-right:36px}
+  .btn-x{
+    position:absolute;top:50%;right:8px;transform:translateY(-50%) scale(.92);
+    width:22px;height:22px;padding:0;border-radius:50%;
+    background:#fef2f2;border:1px solid #fecaca;color:#ef4444;
+    font-size:0;line-height:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    opacity:0;cursor:pointer;
+    transition:opacity .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .btn-x::before{
+    content:"";display:block;width:10px;height:10px;
+    background:currentColor;
+    -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg>") center/contain no-repeat;
+            mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg>") center/contain no-repeat;
+  }
+  tbody tr.row-data:hover .btn-x,
+  .btn-x:focus-visible{ opacity:1; transform:translateY(-50%) scale(1) }
+  .btn-x:hover{
+    background:var(--danger);color:#fff;border-color:var(--danger);
+    transform:translateY(-50%) scale(1.08);
+    box-shadow:0 4px 10px rgba(239,68,68,.35);
+  }
+  .btn-x:active{ transform:translateY(-50%) scale(.96) }
 
   .range-tag{
     display:inline-flex;align-items:center;gap:6px;
@@ -590,20 +616,19 @@ function render(){
   }
   const groups = groupByDate(filtered);
   let html = tag + `<div class="table-wrap"><table id="dataTable">
-    <thead><tr><th>วันที่</th><th>ทะเบียนรถ</th><th>จำนวน</th><th>ชนิดรถ</th><th>จำนวนเงิน</th><th>จัดการ</th></tr></thead><tbody>`;
+    <thead><tr><th>วันที่</th><th>ทะเบียนรถ</th><th>จำนวน</th><th>ชนิดรถ</th><th>จำนวนเงิน</th></tr></thead><tbody>`;
 
   let totalPwang = 0, totalSibLor = 0, totalPrice = 0;
 
   for(const [date, rows] of groups){
     rows.forEach((r,i)=>{
       const p = +r.price || 0;
-      html += `<tr>
+      html += `<tr class="row-data">
         <td>${i===0 ? formatThaiDate(date) : ""}</td>
         <td>${escapeHtml(r.plate)}</td>
         <td>${r.qty}</td>
         <td>${escapeHtml(r.type)}</td>
-        <td>${p ? formatMoney(p) : ""}</td>
-        <td class="actions"><button class="danger icon" data-del="${r.id}">ลบ</button></td>
+        <td class="has-x">${p ? formatMoney(p) : ""}<button class="btn-x" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ">×</button></td>
       </tr>`;
     });
     const byType = {};
@@ -611,7 +636,7 @@ function render(){
     const sumQty = rows.reduce((s,r)=>s+r.qty,0);
     const sumPrice = rows.reduce((s,r)=>s+(+r.price||0),0);
     const typeText = Object.keys(byType).join(" / ");
-    html += `<tr class="sum"><td colspan="2">รวม</td><td>${sumQty}</td><td>${typeText}</td><td>${sumPrice ? formatMoney(sumPrice) : ""}</td><td></td></tr>`;
+    html += `<tr class="sum"><td colspan="2">รวม</td><td>${sumQty}</td><td>${typeText}</td><td>${sumPrice ? formatMoney(sumPrice) : ""}</td></tr>`;
     rows.forEach(r=>{
       if(r.type==="พ่วง") totalPwang += r.qty;
       else if(r.type==="สิบล้อ") totalSibLor += r.qty;
@@ -620,16 +645,16 @@ function render(){
   }
 
   if(totalPwang){
-    html += `<tr class="grand"><td class="label" rowspan="${(totalPwang && totalSibLor)?2:1}">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalPwang}</td><td>พ่วง</td><td></td></tr>`;
+    html += `<tr class="grand"><td class="label" rowspan="${(totalPwang && totalSibLor)?2:1}">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalPwang}</td><td>พ่วง</td></tr>`;
   }
   if(totalSibLor){
     if(!totalPwang){
-      html += `<tr class="grand"><td class="label">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td><td></td></tr>`;
+      html += `<tr class="grand"><td class="label">ยอดรวมสุทธิ</td><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td></tr>`;
     }else{
-      html += `<tr class="grand"><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td><td></td></tr>`;
+      html += `<tr class="grand"><td colspan="2"></td><td>${totalSibLor}</td><td>สิบล้อ</td></tr>`;
     }
   }
-  html += `<tr class="grand"><td class="label" colspan="2">รวมเงินทั้งหมด</td><td colspan="3" style="text-align:right;font-size:15px"></td><td>${formatMoney(totalPrice)} บาท</td></tr>`;
+  html += `<tr class="grand"><td class="label" colspan="4">รวมเงินทั้งหมด</td><td>${formatMoney(totalPrice)} บาท</td></tr>`;
 
   html += `</tbody></table></div>`;
   tableArea.innerHTML = html;
